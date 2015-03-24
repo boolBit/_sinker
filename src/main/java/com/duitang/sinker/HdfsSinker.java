@@ -19,7 +19,7 @@ public class HdfsSinker {
 	
 	private Configuration conf = new Configuration();
 	
-	private String hdfsPfx;
+	private String hdfsPfx = "http://s4:9999";
 	
 	public HdfsSinker() {
 	    
