@@ -45,9 +45,9 @@ public class HdfsSinker {
 		sb.append(".json");
 		if (tail == null) {
 		    tail = UUID.randomUUID().toString();
-			sb.append("/");
-			sb.append(tail);
 		}
+		sb.append("/");
+        sb.append(tail);
 		copyToHdfs(local, sb.toString());
 	}
 	
