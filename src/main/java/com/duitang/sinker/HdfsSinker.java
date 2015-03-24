@@ -62,7 +62,7 @@ public class HdfsSinker {
 			fs.rename(hdfstmp, path);
 			fs.delete(hdfstmp, true);
 			fs.close();
-			new File(local).renameTo(new File(path + ".done"));
+			new File(local).renameTo(new File(local + ".done"));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
