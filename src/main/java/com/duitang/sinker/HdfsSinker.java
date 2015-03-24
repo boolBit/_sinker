@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.log4j.Logger;
 
 /**
  * 本地文件同步至HDFS
@@ -17,6 +18,8 @@ import org.apache.hadoop.fs.Path;
  */
 public class HdfsSinker {
 	
+    private final Logger log = Logger.getLogger("main");
+    
 	private Configuration conf = new Configuration();
 	
 	private String hdfsPfx = "hdfs://s4:9999";
@@ -64,7 +67,7 @@ public class HdfsSinker {
 			fs.close();
 			new File(local).renameTo(new File(local + ".done"));
 		} catch (Exception e) {
-			e.printStackTrace();
+		    log.error("copyToHdfs_failed:", e);
 		}
 	}
 
