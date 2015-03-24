@@ -3,6 +3,7 @@ package com.duitang.sinker;
 import java.io.File;
 import java.util.UUID;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -56,12 +57,15 @@ public class HdfsSinker {
 			if (!remote.startsWith("/")) {
 				remote = "/" + remote;
 			}
+			String dirName = FilenameUtils.getFullPathNoEndSeparator(remote);
+			Path remoteDir = new Path(dirName);
 			//防止传输过程中断，先写到hdfs临时目录，成功后执行原子操作rename
 			Path src = new Path(local);
 			Path hdfstmp = new Path(hdfsPfx + "/tmp" + remote);
 			Path path = new Path(hdfsPfx + remote);
 			FileSystem fs = path.getFileSystem(conf);
 			fs.copyFromLocalFile(false, src, hdfstmp);
+			fs.mkdirs(remoteDir);
 			fs.rename(hdfstmp, path);
 			fs.delete(hdfstmp, true);
 			fs.close();
