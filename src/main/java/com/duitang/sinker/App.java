@@ -3,6 +3,7 @@ package com.duitang.sinker;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -11,7 +12,11 @@ import org.apache.log4j.DailyRollingFileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 
+import com.google.common.collect.Maps;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -24,6 +29,8 @@ import com.sun.net.httpserver.HttpServer;
 public class App {
     
     private SinkerCtx conf;
+    
+    private final ObjectMapper mapper = new ObjectMapper();
     
     public String getLogBasePath() {
         return "/duitang/logs/usr/sinker/" + conf.getBiz();
@@ -65,8 +72,21 @@ public class App {
         }
     }
     
-    public void initConsole(SinkerCtx ctx) {
-        InetSocketAddress addr = new InetSocketAddress(ctx.getConsolePort());
+    private String json(Object o) {
+        try {
+            return mapper.writeValueAsString(o);
+        } catch (JsonGenerationException e) {
+            e.printStackTrace();
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+    
+    public void initConsole() {
+        InetSocketAddress addr = new InetSocketAddress(conf.getConsolePort());
         try {
             HttpServer s = HttpServer.create(addr, 0);
             Executor exe = Executors.newFixedThreadPool(1);
@@ -74,8 +94,12 @@ public class App {
             s.createContext("/metadata", new HttpHandler() {
                 @Override
                 public void handle(HttpExchange ex) throws IOException {
+                    Map<String, Object> m = Maps.newHashMap();
+                    m.put("success", true);
+                    String data = json(m);
+                    ex.sendResponseHeaders(200, data.getBytes().length);
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
-                    pw.println("done");
+                    pw.println(data);
                     pw.close();
                 }
             });
@@ -83,10 +107,14 @@ public class App {
             s.createContext("/halt", new HttpHandler() {
                 @Override
                 public void handle(HttpExchange ex) throws IOException {
-                    Runtime.getRuntime().exit(0);
+                    Map<String, Object> m = Maps.newHashMap();
+                    m.put("success", true);
+                    String data = json(m);
+                    ex.sendResponseHeaders(200, data.getBytes().length);
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
-                    pw.println("done");
+                    pw.println(data);
                     pw.close();
+                    Runtime.getRuntime().exit(0);
                 }
             });
             s.start();
@@ -108,6 +136,7 @@ public class App {
                 md.doHalt();
             }
         });
+        app.initConsole();
         System.out.println("init sinker:" + app.conf + " done");
     }
 }
