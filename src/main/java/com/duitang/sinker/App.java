@@ -5,6 +5,8 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -97,7 +99,7 @@ public class App {
                     Map<String, Object> m = Maps.newHashMap();
                     m.put("success", true);
                     String data = json(m);
-                    ex.sendResponseHeaders(200, data.getBytes().length);
+                    ex.sendResponseHeaders(200, data.getBytes().length + 1);
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
                     pw.println(data);
                     pw.close();
@@ -114,7 +116,12 @@ public class App {
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
                     pw.println(data);
                     pw.close();
-                    Runtime.getRuntime().exit(0);
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            Runtime.getRuntime().exit(0);
+                        }
+                    }, 1000);
                 }
             });
             s.start();
