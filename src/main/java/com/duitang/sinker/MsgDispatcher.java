@@ -27,9 +27,7 @@ import com.google.common.collect.Maps;
  */
 public class MsgDispatcher {
     
-    private final String msgGroup;
-    private final String clusterZkConnStr;
-    private final String topic;
+    private final SinkerCtx conf;
     private final String hdfsTable;
     
     private final Logger msgBuff = Logger.getLogger("msg");
@@ -41,12 +39,10 @@ public class MsgDispatcher {
     private ConsumerConnector consumer;
     private HdfsSinker hdfsSinker = new HdfsSinker();
     
-    public MsgDispatcher(SinkerCtx conf) {
-        this.msgGroup = conf.getGroup();
-        this.topic = conf.getBiz();
-        this.clusterZkConnStr = conf.getClusterZkConnStr();
+    public MsgDispatcher(final SinkerCtx conf) {
+        this.conf = conf;
         hdfsTable = "t_" + conf.getBiz();
-        new Thread("HdfsSinker_flush") {
+        new Thread("Hdfs_flusher") {
             @Override
             public void run() {
                 while (true) {
@@ -55,7 +51,7 @@ public class MsgDispatcher {
                     try {
                         ssleep(60 * 1000);
                         Collection<File> files = FileUtils.listFiles(
-                            new File("/duitang/logs/usr/sinker/" + topic), 
+                            new File("/duitang/logs/usr/sinker/" + conf.getBiz()), 
                             exts, false
                         );
                         if (files == null || files.size() == 0) continue;
@@ -86,11 +82,11 @@ public class MsgDispatcher {
     }
     
     private ConsumerConfig createConsumerConfig() {
-        String mxName = ManagementFactory.getRuntimeMXBean().getName();
-        String consumerId = String.format("%s-%s", this.topic, mxName.replace('@', '-'));
+        String mxName = ManagementFactory.getRuntimeMXBean().getName();//pid@hostname
+        String consumerId = String.format("%s-%s", conf.getBiz(), mxName.replace('@', '-'));
         Properties props = new Properties();
-        props.put("zookeeper.connect", clusterZkConnStr);
-        props.put("group.id", msgGroup);
+        props.put("zookeeper.connect", conf.getClusterZkConnStr());
+        props.put("group.id", conf.getGroup());
         props.put("zookeeper.session.timeout.ms", "8000");
         props.put("zookeeper.sync.time.ms", "500");
         props.put("auto.commit.interval.ms", "1000");
@@ -105,22 +101,27 @@ public class MsgDispatcher {
     
     public void startup() {
         consumer = Consumer.createJavaConsumerConnector(createConsumerConfig());
-        topicCountMap.put(topic, new Integer(1));
+        for (final String topic : this.conf.getTopics()) {
+            topicCountMap.put(topic, new Integer(1));
+        }
         consumerMap = consumer.createMessageStreams(topicCountMap);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("consumer_started");
-                KafkaStream<byte[], byte[]> stream = consumerMap.get(topic).get(0);
-                ConsumerIterator<byte[], byte[]> it = stream.iterator();
-                String msg;
-                while (!halt.get() && it.hasNext()) {
-                    msg = new String(it.next().message());
-                    msgBuff.warn(msg);
+        
+        for(final String topic : this.conf.getTopics()) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("receiver_started");
+                    KafkaStream<byte[], byte[]> stream = consumerMap.get(topic).get(0);
+                    ConsumerIterator<byte[], byte[]> it = stream.iterator();
+                    String msg;
+                    while (!halt.get() && it.hasNext()) {
+                        msg = new String(it.next().message());
+                        msgBuff.warn(msg);
+                    }
+                    consumer.shutdown();
+                    System.out.println("receiver_ended");
                 }
-                consumer.shutdown();
-                System.out.println("consumer_ended");
-            }
-        }, "sinker_consumer").start();
+            }, "sinker_consumer_" + topic).start();
+        }
     }
 }

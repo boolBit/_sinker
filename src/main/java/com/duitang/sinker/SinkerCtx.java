@@ -1,5 +1,6 @@
 package com.duitang.sinker;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -9,6 +10,8 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.google.common.collect.Lists;
+
 /**
  * 
  * @author kevx
@@ -16,39 +19,51 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class SinkerCtx {
 
+    private final String group = "sinker";
+    private String zkCommEndpoint;
     private String clusterZkConnStr;
     private String cluster;
-    private String group;
     private String biz;
-    private String zkCommEndpoint;
     private int consolePort;
+    private List<String> topics = Lists.newArrayList();
     
     private ObjectMapper mapper = new ObjectMapper();
     
+    private static final String zkBase = "/config/kafka_clusters";
+    
     public SinkerCtx(Properties prop) {
-        cluster = prop.getProperty("cluster");
-        group = prop.getProperty("group");
         biz = prop.getProperty("biz");
         zkCommEndpoint = prop.getProperty("zkCommEndpoint");
         consolePort = Integer.parseInt(prop.getProperty("consolePort"));
-        Validate.isTrue(StringUtils.isNotEmpty(cluster));
-        Validate.isTrue(StringUtils.isNotEmpty(group));
         Validate.isTrue(StringUtils.isNotEmpty(biz));
         
         try {
             ZooKeeper zk = new ZooKeeper(zkCommEndpoint, 3000, null);
-            byte[] bs = zk.getData("/config/kafka_clusters/" + cluster, false, new Stat());
+            List<String> clusters = zk.getChildren(zkBase, false);
+            for (String cluster : clusters) {
+                List<String> bizs = zk.getChildren(zkBase + '/' + cluster, false);
+                if (bizs.contains(biz)) {
+                    byte[] bs = zk.getData(zkBase + '/' + cluster, false, new Stat());
+                    Validate.isTrue(bs != null);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> obj = mapper.readValue(new String(bs), Map.class);
+                    clusterZkConnStr = (String) obj.get("zk_endpoint");
+                    
+                    List<String> lst = zk.getChildren(zkBase + '/' + cluster + '/' + biz, false);
+                    if (lst != null && !lst.isEmpty()) {
+                        topics.addAll(lst);
+                    } else {
+                        topics.add(biz);
+                    }
+                }
+            }
             zk.close();
-            Validate.isTrue(bs != null);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> obj = mapper.readValue(new String(bs), Map.class);
-            String connStr = (String) obj.get("zk_endpoint");
-            clusterZkConnStr = connStr;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
     }
 
+    
     public String getClusterZkConnStr() {
         return clusterZkConnStr;
     }
@@ -56,6 +71,10 @@ public class SinkerCtx {
     @Override
     public String toString() {
         return String.format("cluster:%s;biz:%s;group:%s", cluster, biz, group);
+    }
+
+    public List<String> getTopics() {
+        return topics;
     }
 
     public String getCluster() {

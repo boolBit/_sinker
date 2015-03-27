@@ -64,10 +64,8 @@ public class App {
         Properties prop = new Properties();
         try {
             prop.put("zkCommEndpoint", args[0]);
-            prop.put("cluster", args[1]);
-            prop.put("biz", args[2]);
-            prop.put("group", args[3]);
-            prop.put("consolePort", args[4]);
+            prop.put("biz", args[1]);
+            prop.put("consolePort", args[2]);
             conf = new SinkerCtx(prop);
         } catch (Exception e) {
             e.printStackTrace();
@@ -112,7 +110,7 @@ public class App {
                     Map<String, Object> m = Maps.newHashMap();
                     m.put("success", true);
                     String data = json(m);
-                    ex.sendResponseHeaders(200, data.getBytes().length);
+                    ex.sendResponseHeaders(200, data.getBytes().length + 1);
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
                     pw.println(data);
                     pw.close();
@@ -136,7 +134,7 @@ public class App {
         app.initLog4j();
         
         final MsgDispatcher md = new MsgDispatcher(app.conf);
-        md.startup();
+        //md.startup();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
