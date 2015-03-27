@@ -134,7 +134,7 @@ public class App {
         app.initLog4j();
         
         final MsgDispatcher md = new MsgDispatcher(app.conf);
-        //md.startup();
+        md.startup();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
