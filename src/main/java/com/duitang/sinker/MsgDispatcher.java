@@ -27,7 +27,7 @@ import com.google.common.collect.Maps;
  */
 public class MsgDispatcher {
     
-    private final SinkerCtx conf;
+    private final SinkerCtx ctx;
     private final String hdfsTable;
     
     private final Logger msgBuff = Logger.getLogger("msg");
@@ -40,7 +40,7 @@ public class MsgDispatcher {
     private HdfsSinker hdfsSinker = new HdfsSinker();
     
     public MsgDispatcher(final SinkerCtx conf) {
-        this.conf = conf;
+        this.ctx = conf;
         hdfsTable = "t_" + conf.getBiz();
         new Thread("Hdfs_flusher") {
             @Override
@@ -83,10 +83,10 @@ public class MsgDispatcher {
     
     private ConsumerConfig createConsumerConfig() {
         String mxName = ManagementFactory.getRuntimeMXBean().getName();//pid@hostname
-        String consumerId = String.format("%s-%s", conf.getBiz(), mxName.replace('@', '-'));
+        String consumerId = String.format("%s-%s", ctx.getBiz(), mxName.replace('@', '-'));
         Properties props = new Properties();
-        props.put("zookeeper.connect", conf.getClusterZkConnStr());
-        props.put("group.id", conf.getGroup());
+        props.put("zookeeper.connect", ctx.getClusterZkConnStr());
+        props.put("group.id", ctx.getGroup());
         props.put("zookeeper.session.timeout.ms", "8000");
         props.put("zookeeper.sync.time.ms", "500");
         props.put("auto.commit.interval.ms", "1000");
@@ -101,12 +101,12 @@ public class MsgDispatcher {
     
     public void startup() {
         consumer = Consumer.createJavaConsumerConnector(createConsumerConfig());
-        for (final String topic : this.conf.getTopics()) {
+        for (final String topic : this.ctx.topics()) {
             topicCountMap.put(topic, new Integer(1));
         }
         consumerMap = consumer.createMessageStreams(topicCountMap);
         
-        for(final String topic : this.conf.getTopics()) {
+        for(final String topic : this.ctx.topics()) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -117,6 +117,7 @@ public class MsgDispatcher {
                     while (!halt.get() && it.hasNext()) {
                         msg = new String(it.next().message());
                         msgBuff.warn(msg);
+                        ctx.msgCount.incrementAndGet();
                     }
                     consumer.shutdown();
                     System.out.println("receiver_ended");

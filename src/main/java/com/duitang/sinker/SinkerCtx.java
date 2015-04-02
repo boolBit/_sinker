@@ -1,15 +1,22 @@
 package com.duitang.sinker;
 
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.ZooDefs.Perms;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 
 /**
@@ -20,12 +27,14 @@ import com.google.common.collect.Lists;
 public class SinkerCtx {
 
     private final String group = "sinker";
+    private ZooKeeper zk;
     private String zkCommEndpoint;
     private String clusterZkConnStr;
     private String cluster;
     private String biz;
     private int consolePort;
-    private List<String> topics = Lists.newArrayList();
+    
+    public final AtomicLong msgCount = new AtomicLong();
     
     private ObjectMapper mapper = new ObjectMapper();
     
@@ -38,7 +47,7 @@ public class SinkerCtx {
         Validate.isTrue(StringUtils.isNotEmpty(biz));
         
         try {
-            ZooKeeper zk = new ZooKeeper(zkCommEndpoint, 3000, null);
+            zk = new ZooKeeper(zkCommEndpoint, 3000, null);
             List<String> clusters = zk.getChildren(zkBase, false);
             for (String cluster : clusters) {
                 List<String> bizs = zk.getChildren(zkBase + '/' + cluster, false);
@@ -48,16 +57,14 @@ public class SinkerCtx {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> obj = mapper.readValue(new String(bs), Map.class);
                     clusterZkConnStr = (String) obj.get("zk_endpoint");
-                    
-                    List<String> lst = zk.getChildren(zkBase + '/' + cluster + '/' + biz, false);
-                    if (lst != null && !lst.isEmpty()) {
-                        topics.addAll(lst);
-                    } else {
-                        topics.add(biz);
-                    }
                 }
             }
-            zk.close();
+            
+            InetAddress ia = InetAddress.getLocalHost();
+            String host = ia.getHostAddress();
+            String endpoint = host + ':' + consolePort;
+            List<ACL> acls = Lists.newArrayList(new ACL(Perms.ALL, Ids.ANYONE_ID_UNSAFE));
+            zk.create("/trivial/sinkers/" + biz + '/' + endpoint, null, acls, CreateMode.EPHEMERAL);
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -71,10 +78,6 @@ public class SinkerCtx {
     @Override
     public String toString() {
         return String.format("cluster:%s;biz:%s;group:%s", cluster, biz, group);
-    }
-
-    public List<String> getTopics() {
-        return topics;
     }
 
     public String getCluster() {
@@ -92,5 +95,7 @@ public class SinkerCtx {
     public int getConsolePort() {
         return consolePort;
     }
-    
+    public List<String> topics() {
+        return Splitter.on(',').splitToList(biz);
+    }
 }

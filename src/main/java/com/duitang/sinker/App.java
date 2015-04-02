@@ -30,12 +30,12 @@ import com.sun.net.httpserver.HttpServer;
  */
 public class App {
     
-    private SinkerCtx conf;
+    private SinkerCtx ctx;
     
     private final ObjectMapper mapper = new ObjectMapper();
     
     public String getLogBasePath() {
-        return "/duitang/logs/usr/sinker/" + conf.getBiz();
+        return "/duitang/logs/usr/sinker/" + ctx.getBiz();
     }
     
     public void initLog4j() {
@@ -66,7 +66,7 @@ public class App {
             prop.put("zkCommEndpoint", args[0]);
             prop.put("biz", args[1]);
             prop.put("consolePort", args[2]);
-            conf = new SinkerCtx(prop);
+            ctx = new SinkerCtx(prop);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -86,7 +86,7 @@ public class App {
     }
     
     public void initConsole() {
-        InetSocketAddress addr = new InetSocketAddress(conf.getConsolePort());
+        InetSocketAddress addr = new InetSocketAddress(ctx.getConsolePort());
         try {
             HttpServer s = HttpServer.create(addr, 0);
             Executor exe = Executors.newFixedThreadPool(1);
@@ -109,6 +109,7 @@ public class App {
                 public void handle(HttpExchange ex) throws IOException {
                     Map<String, Object> m = Maps.newHashMap();
                     m.put("success", true);
+                    m.put("msg_count", ctx.msgCount.get());
                     String data = json(m);
                     ex.sendResponseHeaders(200, data.getBytes().length + 1);
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
@@ -133,7 +134,7 @@ public class App {
         app.initConf(args);
         app.initLog4j();
         
-        final MsgDispatcher md = new MsgDispatcher(app.conf);
+        final MsgDispatcher md = new MsgDispatcher(app.ctx);
         md.startup();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -142,6 +143,6 @@ public class App {
             }
         });
         app.initConsole();
-        System.out.println("init sinker:" + app.conf + " done");
+        System.out.println("init sinker:" + app.ctx + " done");
     }
 }
