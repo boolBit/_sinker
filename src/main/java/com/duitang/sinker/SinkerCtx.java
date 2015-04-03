@@ -41,7 +41,7 @@ public class SinkerCtx {
     private static final String zkBase = "/config/kafka_clusters";
     
     public String getLogBasePath() {
-        return "/duitang/logs/usr/sinker/" + consolePort + '/' + biz;
+        return "/duitang/logs/usr/sinker/" + '/' + biz + consolePort;
     }
     
     public SinkerCtx(Properties prop) {

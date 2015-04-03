@@ -92,6 +92,7 @@ public class App {
                 public void handle(HttpExchange ex) throws IOException {
                     Map<String, Object> m = Maps.newHashMap();
                     m.put("success", true);
+                    m.put("msgcount", ctx.msgCount.get());
                     String data = json(m);
                     ex.sendResponseHeaders(200, data.getBytes().length + 1);
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
@@ -105,7 +106,6 @@ public class App {
                 public void handle(HttpExchange ex) throws IOException {
                     Map<String, Object> m = Maps.newHashMap();
                     m.put("success", true);
-                    m.put("msg_count", ctx.msgCount.get());
                     String data = json(m);
                     ex.sendResponseHeaders(200, data.getBytes().length + 1);
                     PrintWriter pw = new PrintWriter(ex.getResponseBody());
