@@ -34,14 +34,10 @@ public class App {
     
     private final ObjectMapper mapper = new ObjectMapper();
     
-    public String getLogBasePath() {
-        return "/duitang/logs/usr/sinker/" + ctx.getBiz();
-    }
-    
     public void initLog4j() {
         DailyRollingFileAppender appenderMain = new DailyRollingFileAppender();
         appenderMain.setName("msgAppender");
-        appenderMain.setFile(getLogBasePath() + "/main.log");
+        appenderMain.setFile(ctx.getLogBasePath() + "/main.log");
         appenderMain.setDatePattern("'.'yyyy-MM-dd'.log'");
         appenderMain.setLayout(new PatternLayout("%d %-5p [%c{1}] %m%n"));
         appenderMain.setThreshold(Level.DEBUG);
@@ -51,7 +47,7 @@ public class App {
         
         DailyRollingFileAppender appenderMsg = new DailyRollingFileAppender();
         appenderMsg.setName("msgAppender");
-        appenderMsg.setFile(getLogBasePath() + "/msg.log");
+        appenderMsg.setFile(ctx.getLogBasePath() + "/msg.log");
         appenderMsg.setDatePattern("'.'yyyyMMddHH'.data'");
         appenderMsg.setLayout(new PatternLayout("%m%n"));
         appenderMsg.setThreshold(Level.DEBUG);

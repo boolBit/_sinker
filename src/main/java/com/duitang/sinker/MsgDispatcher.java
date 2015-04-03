@@ -51,7 +51,7 @@ public class MsgDispatcher {
                     try {
                         ssleep(60 * 1000);
                         Collection<File> files = FileUtils.listFiles(
-                            new File("/duitang/logs/usr/sinker/" + conf.getBiz()), 
+                            new File(ctx.getLogBasePath()), 
                             exts, false
                         );
                         if (files == null || files.size() == 0) continue;
