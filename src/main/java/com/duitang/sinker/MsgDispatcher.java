@@ -102,27 +102,28 @@ public class MsgDispatcher {
     public void startup() {
         consumer = Consumer.createJavaConsumerConnector(createConsumerConfig());
         for (final String topic : this.ctx.topics()) {
-            topicCountMap.put(topic, new Integer(1));
+            topicCountMap.put(topic, new Integer(this.ctx.getParallel()));
         }
         consumerMap = consumer.createMessageStreams(topicCountMap);
-        
         for(final String topic : this.ctx.topics()) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    System.out.println("receiver_started");
-                    KafkaStream<byte[], byte[]> stream = consumerMap.get(topic).get(0);
-                    ConsumerIterator<byte[], byte[]> it = stream.iterator();
-                    String msg;
-                    while (!halt.get() && it.hasNext()) {
-                        msg = new String(it.next().message());
-                        msgBuff.warn(msg);
-                        ctx.msgCount.incrementAndGet();
+            for (int i = 0; i < this.ctx.getParallel(); i++) {
+                final Integer indexOfStream = i;
+                new Thread("sinker_consumer_" + topic + i){
+                    @Override
+                    public void run() {
+                        System.out.println("consumer_started");
+                        KafkaStream<byte[], byte[]> stream = consumerMap.get(topic).get(Integer.valueOf(indexOfStream));
+                        ConsumerIterator<byte[], byte[]> it = stream.iterator();
+                        while (!halt.get() && it.hasNext()) {
+                            String msg = new String(it.next().message());
+                            msgBuff.warn(msg);
+                            ctx.msgCount.incrementAndGet();
+                        }
+                        consumer.shutdown();
+                        System.out.println("consumer_ended");
                     }
-                    consumer.shutdown();
-                    System.out.println("receiver_ended");
-                }
-            }, "sinker_consumer_" + topic).start();
+                }.start();
+            }
         }
     }
 }

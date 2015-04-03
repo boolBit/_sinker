@@ -1,6 +1,7 @@
 package com.duitang.sinker;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -33,21 +34,24 @@ public class SinkerCtx {
     private String cluster;
     private String biz;
     private int consolePort;
+    private int parallel;
     
     public final AtomicLong msgCount = new AtomicLong();
     
     private ObjectMapper mapper = new ObjectMapper();
     
     private static final String zkBase = "/config/kafka_clusters";
+    private static final List<ACL> acls = Lists.newArrayList(new ACL(Perms.ALL, Ids.ANYONE_ID_UNSAFE));
     
     public String getLogBasePath() {
-        return "/duitang/logs/usr/sinker/" + biz +  '/' + consolePort;
+        return "/duitang/logs/usr/sinker/" + biz;
     }
     
     public SinkerCtx(Properties prop) {
         biz = prop.getProperty("biz");
         zkCommEndpoint = prop.getProperty("zkCommEndpoint");
         consolePort = Integer.parseInt(prop.getProperty("consolePort"));
+        parallel = Integer.parseInt(prop.getProperty("parallel"));
         Validate.isTrue(StringUtils.isNotEmpty(biz));
         
         try {
@@ -63,17 +67,43 @@ public class SinkerCtx {
                     clusterZkConnStr = (String) obj.get("zk_endpoint");
                 }
             }
-            
-            InetAddress ia = InetAddress.getLocalHost();
-            String host = ia.getHostAddress();
-            String endpoint = host + ':' + consolePort;
-            List<ACL> acls = Lists.newArrayList(new ACL(Perms.ALL, Ids.ANYONE_ID_UNSAFE));
-            zk.create("/trivial/sinkers/" + biz + '/' + endpoint, null, acls, CreateMode.EPHEMERAL);
+            zkDaemon.start();
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
     }
 
+    public String endpoint() throws UnknownHostException {
+        InetAddress ia = InetAddress.getLocalHost();
+        String host = ia.getHostAddress();
+        String endpoint = host + ':' + consolePort;
+        return endpoint;
+    }
+    
+    public Thread zkDaemon = new Thread() {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    if (zk == null)  zk = new ZooKeeper(zkCommEndpoint, 3000, null);
+                    Thread.sleep(2000);
+                    if (!zk.getState().isAlive()) {
+                        zk.close();
+                        zk = null;
+                        continue;
+                    }
+                    String path = "/trivial/sinkers/" + biz + '/' + endpoint();
+                    if (zk.exists(path, false) == null) {
+                        zk.create(path, null, acls, CreateMode.EPHEMERAL);
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
     
     public String getClusterZkConnStr() {
         return clusterZkConnStr;
@@ -99,6 +129,11 @@ public class SinkerCtx {
     public int getConsolePort() {
         return consolePort;
     }
+    
+    public int getParallel() {
+        return parallel;
+    }
+
     public List<String> topics() {
         return Splitter.on(',').splitToList(biz);
     }

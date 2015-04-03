@@ -61,7 +61,8 @@ public class App {
         try {
             prop.put("zkCommEndpoint", args[0]);
             prop.put("biz", args[1]);
-            prop.put("consolePort", args[2]);
+            prop.put("parallel", args[2]);
+            prop.put("consolePort", args[3]);
             ctx = new SinkerCtx(prop);
         } catch (Exception e) {
             e.printStackTrace();
