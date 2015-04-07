@@ -64,7 +64,9 @@ public class SinkerCtx {
                     Validate.isTrue(bs != null);
                     @SuppressWarnings("unchecked")
                     Map<String, Object> obj = mapper.readValue(new String(bs), Map.class);
-                    clusterZkConnStr = (String) obj.get("zk_endpoint");
+                    this.clusterZkConnStr = (String) obj.get("zk_endpoint");
+                    this.cluster = cluster;
+                    break;
                 }
             }
             zkDaemon.start();
