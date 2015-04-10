@@ -63,6 +63,11 @@ public class App {
             prop.put("biz", args[1]);
             prop.put("parallel", args[2]);
             prop.put("consolePort", args[3]);
+            if (args.length >= 5) { 
+                prop.put("HDFSEndpoint", args[4]);
+            } else {
+                prop.put("HDFSEndpoint", "192.168.172.4");
+            }
             ctx = new SinkerCtx(prop);
         } catch (Exception e) {
             e.printStackTrace();
@@ -88,7 +93,7 @@ public class App {
             HttpServer s = HttpServer.create(addr, 0);
             Executor exe = Executors.newFixedThreadPool(1);
             s.setExecutor(exe);
-            s.createContext("/metadata", new HttpHandler() {
+            s.createContext("/", new HttpHandler() {
                 @Override
                 public void handle(HttpExchange ex) throws IOException {
                     Map<String, Object> m = Maps.newHashMap();

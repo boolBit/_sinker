@@ -29,6 +29,7 @@ public class SinkerCtx {
 
     private final String group = "sinker";
     private ZooKeeper zk;
+    private String hdfsEndpoint;
     private String zkCommEndpoint;
     private String clusterZkConnStr;
     private String cluster;
@@ -49,6 +50,7 @@ public class SinkerCtx {
     
     public SinkerCtx(Properties prop) {
         biz = prop.getProperty("biz");
+        hdfsEndpoint = prop.getProperty("HDFSEndpoint");
         zkCommEndpoint = prop.getProperty("zkCommEndpoint");
         consolePort = Integer.parseInt(prop.getProperty("consolePort"));
         parallel = Integer.parseInt(prop.getProperty("parallel"));
@@ -134,6 +136,10 @@ public class SinkerCtx {
     
     public int getParallel() {
         return parallel;
+    }
+
+    public String getHdfsEndpoint() {
+        return hdfsEndpoint;
     }
 
     public List<String> topics() {

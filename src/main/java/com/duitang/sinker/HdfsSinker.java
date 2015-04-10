@@ -23,10 +23,10 @@ public class HdfsSinker {
     
 	private Configuration conf = new Configuration();
 	
-	private String hdfsPfx = "hdfs://s4:9999";
+	private final String hdfsPfx;
 	
-	public HdfsSinker() {
-	    
+	public HdfsSinker(String hdfsEndpoint) {
+	    hdfsPfx = "hdfs://" + hdfsEndpoint;
 	}
 	
 	/**
@@ -75,9 +75,4 @@ public class HdfsSinker {
 		}
 	}
 
-	public void setHdfsPfx(String hdfsPfx) {
-		this.hdfsPfx = hdfsPfx;
-	}
-	
-	
 }

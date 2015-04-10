@@ -37,10 +37,11 @@ public class MsgDispatcher {
     private final Map<String, Integer> topicCountMap = Maps.newHashMap();
     private Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap;
     private ConsumerConnector consumer;
-    private HdfsSinker hdfsSinker = new HdfsSinker();
+    private HdfsSinker hdfsSinker;
     
     public MsgDispatcher(final SinkerCtx conf) {
         this.ctx = conf;
+        hdfsSinker = new HdfsSinker(ctx.getHdfsEndpoint());
         hdfsTable = "t_" + conf.getBiz();
         new Thread("Hdfs_flusher") {
             @Override
