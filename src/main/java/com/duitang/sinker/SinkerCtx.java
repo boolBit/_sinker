@@ -4,9 +4,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.cli.CommandLine;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.zookeeper.CreateMode;
@@ -48,12 +48,12 @@ public class SinkerCtx {
         return "/duitang/logs/usr/sinker/" + biz;
     }
     
-    public SinkerCtx(Properties prop) {
-        biz = prop.getProperty("biz");
-        hdfsEndpoint = prop.getProperty("HDFSEndpoint");
-        zkCommEndpoint = prop.getProperty("zkCommEndpoint");
-        consolePort = Integer.parseInt(prop.getProperty("consolePort"));
-        parallel = Integer.parseInt(prop.getProperty("parallel"));
+    public SinkerCtx(CommandLine cmd) {
+        biz = cmd.getOptionValue("biz");
+        hdfsEndpoint = cmd.getOptionValue("hdfs");
+        zkCommEndpoint = cmd.getOptionValue("zkcomm");
+        consolePort = Integer.parseInt(cmd.getOptionValue("port"));
+        parallel = Integer.parseInt(cmd.getOptionValue("parallel"));
         Validate.isTrue(StringUtils.isNotEmpty(biz));
         
         try {

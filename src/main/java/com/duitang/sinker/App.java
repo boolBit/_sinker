@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.PosixParser;
 import org.apache.log4j.DailyRollingFileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -57,18 +60,17 @@ public class App {
     }
     
     public void initConf(String[] args) {
-        Properties prop = new Properties();
         try {
-            prop.put("zkCommEndpoint", args[0]);
-            prop.put("biz", args[1]);
-            prop.put("parallel", args[2]);
-            prop.put("consolePort", args[3]);
-            if (args.length >= 5) { 
-                prop.put("HDFSEndpoint", args[4]);
-            } else {
-                prop.put("HDFSEndpoint", "192.168.172.4");
-            }
-            ctx = new SinkerCtx(prop);
+            Options options = new Options();
+            options.addOption("zkcomm", true, "zk comm endpoint");
+            options.addOption("biz", true, "biz name");
+            options.addOption("port", true, "console port");
+            options.addOption("hdfs", true, "hdfs endpoint");
+            options.addOption("parallel", true, "parallel thread count");
+            
+            CommandLineParser parser = new PosixParser();
+            CommandLine cmd = parser.parse( options, args);
+            ctx = new SinkerCtx(cmd);
         } catch (Exception e) {
             e.printStackTrace();
         }
