@@ -62,7 +62,7 @@ public class MsgDispatcher {
                             String tail = UUID.randomUUID().toString();
                             String pt = f.getName().substring(8, 16);
                             log.warn(String.format("sinking:%s@%s with:%s", path, pt, tail));
-                            hdfsSinker.copyToDW(path, hdfsTable, pt, tail);//复制到hdfs，成功后改名
+                            hdfsSinker.copyToDW(path, hdfsTable.toLowerCase(), pt, tail);//复制到hdfs，成功后改名
                         }
                     } catch (HaltException e) {
                         break;
