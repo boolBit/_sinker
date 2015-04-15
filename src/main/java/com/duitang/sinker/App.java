@@ -51,7 +51,11 @@ public class App {
         DailyRollingFileAppender appenderMsg = new DailyRollingFileAppender();
         appenderMsg.setName("msgAppender");
         appenderMsg.setFile(ctx.getLogBasePath() + "/msg.log");
-        appenderMsg.setDatePattern("'.'yyyyMMddHH'.data'");
+        if (ctx.isDaily()) {
+            appenderMsg.setDatePattern("'.'yyyyMMdd'.data'");
+        } else {
+            appenderMsg.setDatePattern("'.'yyyyMMddHH'.data'");
+        }
         appenderMsg.setLayout(new PatternLayout("%m%n"));
         appenderMsg.setThreshold(Level.DEBUG);
         appenderMsg.setAppend(true);
@@ -67,7 +71,7 @@ public class App {
             options.addOption("port", true, "console port");
             options.addOption("hdfs", true, "hdfs endpoint");
             options.addOption("parallel", true, "parallel thread count");
-            
+            options.addOption("daily", false, "daily flush data to hdfs (hourly by default)");
             CommandLineParser parser = new PosixParser();
             CommandLine cmd = parser.parse( options, args);
             ctx = new SinkerCtx(cmd);

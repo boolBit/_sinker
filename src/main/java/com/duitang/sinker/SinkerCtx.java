@@ -36,6 +36,7 @@ public class SinkerCtx {
     private String biz;
     private int consolePort;
     private int parallel;
+    private boolean daily = false;
     
     public final AtomicLong msgCount = new AtomicLong();
     
@@ -54,6 +55,7 @@ public class SinkerCtx {
         zkCommEndpoint = cmd.getOptionValue("zkcomm");
         consolePort = Integer.parseInt(cmd.getOptionValue("port"));
         parallel = Integer.parseInt(cmd.getOptionValue("parallel"));
+        daily = cmd.hasOption("daily");
         Validate.isTrue(StringUtils.isNotEmpty(biz));
         
         try {
@@ -140,6 +142,9 @@ public class SinkerCtx {
 
     public String getHdfsEndpoint() {
         return hdfsEndpoint;
+    }
+    public boolean isDaily() {
+        return daily;
     }
 
     public List<String> topics() {
