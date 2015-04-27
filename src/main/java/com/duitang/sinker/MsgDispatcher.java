@@ -86,7 +86,7 @@ public class MsgDispatcher {
         String mxName = ManagementFactory.getRuntimeMXBean().getName();//pid@hostname
         String consumerId = String.format("%s-%s", ctx.getBiz(), mxName.replace('@', '-'));
         Properties props = new Properties();
-        props.put("zookeeper.connect", ctx.getClusterZkConnStr());
+        props.put("zookeeper.connect", ctx.getZkKafkaEndpoint());
         props.put("group.id", ctx.getGroup());
         props.put("zookeeper.session.timeout.ms", "8000");
         props.put("zookeeper.sync.time.ms", "500");
