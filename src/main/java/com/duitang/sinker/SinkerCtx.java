@@ -3,6 +3,7 @@ package com.duitang.sinker;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.cli.CommandLine;
@@ -13,8 +14,10 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooDefs.Perms;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * 
@@ -53,10 +56,12 @@ public class SinkerCtx {
         parallel = Integer.parseInt(cmd.getOptionValue("parallel"));
         daily = cmd.hasOption("daily");
         String topicsStr = cmd.getOptionValue("topics");
+        Set<String> topicSet = Sets.newHashSet();
         if (topicsStr != null) {
-            topics.addAll(Splitter.on(',').splitToList(topicsStr));
+            topicSet.addAll(Splitter.on(',').splitToList(topicsStr));
         }
-        topics.add(biz);
+        topicSet.add(biz);
+        topics.addAll(topicSet);
         
         Validate.isTrue(StringUtils.isNotEmpty(biz));
         Validate.isTrue(topics.size() > 0);
