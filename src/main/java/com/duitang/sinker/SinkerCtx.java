@@ -55,7 +55,10 @@ public class SinkerCtx {
         consolePort = Integer.parseInt(cmd.getOptionValue("port"));
         parallel = Integer.parseInt(cmd.getOptionValue("parallel"));
         daily = cmd.hasOption("daily");
-        String topicsStr = cmd.getOptionValue("topics");
+        String topicsStr = null;
+        if (cmd.hasOption("topics")) {
+            topicsStr = cmd.getOptionValue("topics");
+        }
         Set<String> topicSet = Sets.newHashSet();
         if (topicsStr != null) {
             topicSet.addAll(Splitter.on(',').splitToList(topicsStr));
