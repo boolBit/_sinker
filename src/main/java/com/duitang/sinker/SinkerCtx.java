@@ -136,6 +136,11 @@ public class SinkerCtx {
         return daily;
     }
 
+    public long sinkerTimeout() {
+        if (daily) return 24 * 60 * 60 * 1000L;
+        else return 60 * 60 * 1000L;
+    }
+    
     public List<String> topics() {
         return topics;
     }

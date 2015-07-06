@@ -6,8 +6,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
@@ -33,6 +36,7 @@ public class MsgDispatcher {
     private final Logger msgBuff = Logger.getLogger("msg");
     private final Logger log = Logger.getLogger("main");
     
+    private final AtomicLong lastSeen = new AtomicLong(0L);
     private final AtomicBoolean halt = new AtomicBoolean();
     private final Map<String, Integer> topicCountMap = Maps.newHashMap();
     private Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap;
@@ -100,7 +104,31 @@ public class MsgDispatcher {
         halt.set(true);
     }
     
+    public Runnable selfWatchDog = new Runnable() {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Thread.sleep(10 * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                long delta = System.currentTimeMillis() - lastSeen.get();
+                if (delta > ctx.sinkerTimeout()) {
+                    log.warn("sinker will exit in 1 secs");
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            Runtime.getRuntime().exit(0);
+                        }
+                    }, 1000);
+                }
+            }
+        }
+    };
+    
     public void startup() {
+        new Thread(selfWatchDog, "selfWatchDog").start();
         consumer = Consumer.createJavaConsumerConnector(createConsumerConfig());
         for (final String topic : this.ctx.topics()) {
             topicCountMap.put(topic, new Integer(this.ctx.getParallel()));
@@ -112,16 +140,17 @@ public class MsgDispatcher {
                 new Thread("sinker_consumer_" + topic + i){
                     @Override
                     public void run() {
-                        System.out.println("consumer_started");
-                        KafkaStream<byte[], byte[]> stream = consumerMap.get(topic).get(Integer.valueOf(indexOfStream));
+                        log.warn("consumer#" + indexOfStream + "_started");
+                        KafkaStream<byte[], byte[]> stream = consumerMap.get(topic).get(indexOfStream);
                         ConsumerIterator<byte[], byte[]> it = stream.iterator();
                         while (!halt.get() && it.hasNext()) {
+                            lastSeen.set(System.currentTimeMillis());
                             String msg = new String(it.next().message());
                             msgBuff.warn(msg);
                             ctx.msgCount.incrementAndGet();
                         }
                         consumer.shutdown();
-                        System.out.println("consumer_ended");
+                        log.warn("consumer#" + indexOfStream + "_ended");
                     }
                 }.start();
             }
