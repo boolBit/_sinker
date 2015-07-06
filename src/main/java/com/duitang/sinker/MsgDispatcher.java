@@ -107,6 +107,7 @@ public class MsgDispatcher {
     public Runnable selfWatchDog = new Runnable() {
         @Override
         public void run() {
+            lastSeen.set(System.currentTimeMillis());
             while (true) {
                 try {
                     Thread.sleep(10 * 1000);
