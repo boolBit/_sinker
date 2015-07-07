@@ -91,7 +91,11 @@ public class SinkerCtx {
                         zk = null;
                         continue;
                     }
-                    String path = "/trivial/sinkers/" + biz + '/' + endpoint();
+                    String base = "/trivial/sinkers/" + biz;
+                    if (zk.exists(base, false) == null) {
+                        zk.create(base, null, acls, CreateMode.PERSISTENT);
+                    }
+                    String path = base + '/' + endpoint();
                     if (zk.exists(path, false) == null) {
                         zk.create(path, null, acls, CreateMode.EPHEMERAL);
                     }
